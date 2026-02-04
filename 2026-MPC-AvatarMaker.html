@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medium Pub Crawl 2026 - Avatar Maker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FCFBF8;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            width: 200px;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 500;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .subheadline {
+            font-size: 14px;
+            font-weight: 400;
+            color: #666;
+            line-height: 1.5;
+            max-width: 500px;
+        }
+
+        .upload-area {
+            width: 300px;
+            height: 300px;
+            background-color: #e8e8e8;
+            border: 3px dashed #ccc;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .upload-area:hover {
+            background-color: #ddd;
+            border-color: #999;
+        }
+
+        .upload-area.drag-over {
+            background-color: #d0d0d0;
+            border-color: #333;
+        }
+
+        .upload-area.has-image {
+            border-style: solid;
+            border-color: #999;
+        }
+
+        .upload-placeholder {
+            font-size: 80px;
+            color: #999;
+            pointer-events: none;
+        }
+
+        #previewCanvas {
+            display: none;
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 17px;
+        }
+
+        #previewCanvas.active {
+            display: block;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .controls {
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .frame-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .frame-option {
+            position: relative;
+        }
+
+        .frame-option input[type="radio"] {
+            display: none;
+        }
+
+        .frame-option label {
+            display: block;
+            cursor: pointer;
+            border: 3px solid transparent;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+            background-color: #fff;
+        }
+
+        .frame-option label:hover {
+            border-color: #ccc;
+            transform: translateY(-2px);
+        }
+
+        .frame-option input[type="radio"]:checked + label {
+            border-color: #333;
+            transform: translateY(-2px);
+        }
+
+        .frame-thumbnail {
+            width: 100%;
+            aspect-ratio: 1;
+            display: block;
+        }
+
+
+        .color-options {
+            display: flex;
+            gap: 15px;
+        }
+
+        .color-option {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .color-option input[type="radio"] {
+            display: none;
+        }
+
+        .color-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            transition: all 0.2s ease;
+            position: relative;
+            box-shadow: 0 0 0 3px transparent;
+        }
+
+        .color-option input[type="radio"]:checked + .color-circle {
+            box-shadow: 0 0 0 3px #333;
+        }
+
+        .color-circle:hover {
+            transform: scale(1.05);
+        }
+
+        .color-multi {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            overflow: hidden;
+        }
+
+        .color-multi-segment {
+            width: 100%;
+            height: 100%;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px 24px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .download-btn {
+            background-color: #333;
+            color: white;
+        }
+
+        .download-btn:hover {
+            background-color: #000;
+        }
+
+        .download-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .clear-btn {
+            background-color: #fff;
+            color: #333;
+            border: 2px solid #ddd;
+        }
+
+        .clear-btn:hover {
+            background-color: #f5f5f5;
+            border-color: #999;
+        }
+
+        .clear-btn:disabled {
+            background-color: #f9f9f9;
+            color: #ccc;
+            border-color: #eee;
+            cursor: not-allowed;
+        }
+
+        .icon {
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="Images/PubCrawl-TicketLogo.png" alt="Logo" class="logo">
+            <p class="subheadline">Upload your profile picture, choose a frame and color options, and download to receive your new themed image.</p>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-placeholder" id="uploadPlaceholder">+</div>
+            <canvas id="previewCanvas"></canvas>
+        </div>
+
+        <input type="file" id="fileInput" accept="image/*">
+
+        <div class="controls">
+            <div class="control-group">
+                <span class="control-label">Frame Style</span>
+                <div class="frame-options">
+                    <div class="frame-option">
+                        <input type="radio" id="frame1" name="frame" value="01" checked>
+                        <label for="frame1">
+                            <img src="Frames/Frame-01-Multi.png" alt="Frame 1" class="frame-thumbnail">
+                        </label>
+                    </div>
+                    <div class="frame-option">
+                        <input type="radio" id="frame2" name="frame" value="02">
+                        <label for="frame2">
+                            <img src="Frames/Frame-02-Multi.png" alt="Frame 2" class="frame-thumbnail">
+                        </label>
+                    </div>
+                    <div class="frame-option">
+                        <input type="radio" id="frame3" name="frame" value="03">
+                        <label for="frame3">
+                            <img src="Frames/Frame-03-Multi.png" alt="Frame 3" class="frame-thumbnail">
+                        </label>
+                    </div>
+                    <div class="frame-option">
+                        <input type="radio" id="frame4" name="frame" value="04">
+                        <label for="frame4">
+                            <img src="Frames/Frame-04-Multi.png" alt="Frame 4" class="frame-thumbnail">
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">Color</span>
+                <div class="color-options">
+                    <div class="color-option">
+                        <input type="radio" id="colorYellow" name="color" value="Yellow" checked>
+                        <label for="colorYellow">
+                            <div class="color-circle" style="background-color: #FFC017;"></div>
+                        </label>
+                    </div>
+                    <div class="color-option">
+                        <input type="radio" id="colorPink" name="color" value="Pink">
+                        <label for="colorPink">
+                            <div class="color-circle" style="background-color: #FFB7C5;"></div>
+                        </label>
+                    </div>
+                    <div class="color-option">
+                        <input type="radio" id="colorLavender" name="color" value="Lavender">
+                        <label for="colorLavender">
+                            <div class="color-circle" style="background-color: #ABBAE9;"></div>
+                        </label>
+                    </div>
+                    <div class="color-option">
+                        <input type="radio" id="colorRed" name="color" value="Red">
+                        <label for="colorRed">
+                            <div class="color-circle" style="background-color: #E8603A;"></div>
+                        </label>
+                    </div>
+                    <div class="color-option">
+                        <input type="radio" id="colorMulti" name="color" value="Multi">
+                        <label for="colorMulti">
+                            <div class="color-circle color-multi">
+                                <div class="color-multi-segment" style="background-color: #FFC017;"></div>
+                                <div class="color-multi-segment" style="background-color: #FFB7C5;"></div>
+                                <div class="color-multi-segment" style="background-color: #ABBAE9;"></div>
+                                <div class="color-multi-segment" style="background-color: #E8603A;"></div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button class="download-btn" id="downloadBtn" disabled>
+                    <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                    </svg>
+                    Download
+                </button>
+                <button class="clear-btn" id="clearBtn" disabled>
+                    <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                    Clear
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewCanvas = document.getElementById('previewCanvas');
+        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const ctx = previewCanvas.getContext('2d');
+
+        let userImage = null;
+        let currentFrame = null;
+
+        // Upload area click
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                loadImage(e.target.files[0]);
+            }
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                loadImage(e.dataTransfer.files[0]);
+            }
+        });
+
+        // Load user image
+        function loadImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    userImage = img;
+                    renderComposite();
+                    downloadBtn.disabled = false;
+                    clearBtn.disabled = false;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Render composite image
+        function renderComposite() {
+            if (!userImage) return;
+
+            const size = 500;
+            previewCanvas.width = size;
+            previewCanvas.height = size;
+
+            // Draw user image (centered and cropped to fit square)
+            const scale = Math.max(size / userImage.width, size / userImage.height);
+            const scaledWidth = userImage.width * scale;
+            const scaledHeight = userImage.height * scale;
+            const x = (size - scaledWidth) / 2;
+            const y = (size - scaledHeight) / 2;
+
+            ctx.drawImage(userImage, x, y, scaledWidth, scaledHeight);
+
+            // Draw frame overlay
+            if (currentFrame) {
+                ctx.drawImage(currentFrame, 0, 0, size, size);
+            }
+
+            previewCanvas.classList.add('active');
+            uploadPlaceholder.style.display = 'none';
+            uploadArea.classList.add('has-image');
+        }
+
+        // Load frame
+        function loadFrame() {
+            const selectedFrame = document.querySelector('input[name="frame"]:checked').value;
+            const selectedColor = document.querySelector('input[name="color"]:checked').value;
+            const framePath = `Frames/Frame-${selectedFrame}-${selectedColor}.png`;
+
+            const frameImg = new Image();
+            frameImg.onload = () => {
+                currentFrame = frameImg;
+                renderComposite();
+            };
+            frameImg.src = framePath;
+        }
+
+        // Frame and color change listeners
+        document.querySelectorAll('input[name="frame"], input[name="color"]').forEach(input => {
+            input.addEventListener('change', loadFrame);
+        });
+
+        // Download button
+        downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'medium-pub-crawl-2026-avatar.png';
+            link.href = previewCanvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Clear button
+        clearBtn.addEventListener('click', () => {
+            userImage = null;
+            currentFrame = null;
+            ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            previewCanvas.classList.remove('active');
+            uploadPlaceholder.style.display = 'block';
+            uploadArea.classList.remove('has-image');
+            fileInput.value = '';
+            downloadBtn.disabled = true;
+            clearBtn.disabled = true;
+        });
+
+        // Load initial frame
+        loadFrame();
+    </script>
+</body>
+</html>

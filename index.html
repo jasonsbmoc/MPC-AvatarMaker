@@ -728,34 +728,39 @@
         }
 
         // Download button
-        downloadBtn.addEventListener('click', () => {
-            if (isIOS()) {
-                // On iOS, open image in new tab for user to save to Photos
-                previewCanvas.toBlob((blob) => {
-                    const url = URL.createObjectURL(blob);
-                    const newWindow = window.open(url, '_blank');
+        downloadBtn.addEventListener('click', async () => {
+            // On iOS/mobile, try to use Web Share API for native share sheet
+            if (navigator.share && navigator.canShare) {
+                try {
+                    // Convert canvas to blob
+                    const blob = await new Promise(resolve => {
+                        previewCanvas.toBlob(resolve, 'image/png');
+                    });
 
-                    // If popup blocked, try alternative method
-                    if (!newWindow) {
-                        // Create temporary link and click it
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = 'medium-pub-crawl-2026-avatar.png';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
+                    // Create a File object
+                    const file = new File([blob], 'medium-pub-crawl-2026-avatar.png', {
+                        type: 'image/png'
+                    });
+
+                    // Check if we can share this file
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            files: [file],
+                            title: 'Medium Pub Crawl 2026 Avatar'
+                        });
+                        return; // Successfully shared
                     }
-
-                    // Cleanup blob URL after a short delay
-                    setTimeout(() => URL.revokeObjectURL(url), 100);
-                }, 'image/png');
-            } else {
-                // Standard download for non-iOS devices
-                const link = document.createElement('a');
-                link.download = 'medium-pub-crawl-2026-avatar.png';
-                link.href = previewCanvas.toDataURL('image/png');
-                link.click();
+                } catch (error) {
+                    // If share was cancelled or failed, fall through to standard download
+                    console.log('Share cancelled or failed:', error);
+                }
             }
+
+            // Fallback: Standard download for desktop or if share API failed
+            const link = document.createElement('a');
+            link.download = 'medium-pub-crawl-2026-avatar.png';
+            link.href = previewCanvas.toDataURL('image/png');
+            link.click();
         });
 
         // Clear button

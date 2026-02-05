@@ -496,6 +496,10 @@
         let lastX = 0;
         let lastY = 0;
 
+        // Pinch zoom state
+        let initialPinchDistance = 0;
+        let initialScale = 1;
+
         // Upload area click (only when no image is loaded)
         uploadArea.addEventListener('click', (e) => {
             // Don't open file picker if there's already an image
@@ -654,47 +658,104 @@
             }
         });
 
-        // Touch drag functionality
+        // Helper function to calculate distance between two touch points
+        function getTouchDistance(touches) {
+            const touch1 = touches[0];
+            const touch2 = touches[1];
+            const dx = touch2.clientX - touch1.clientX;
+            const dy = touch2.clientY - touch1.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        // Touch drag and pinch zoom functionality
         previewCanvas.addEventListener('touchstart', (e) => {
             if (!userImage) return;
             e.preventDefault();
-            isDragging = true;
-            const rect = previewCanvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            dragStartX = touch.clientX - rect.left;
-            dragStartY = touch.clientY - rect.top;
-            lastX = imageX;
-            lastY = imageY;
-        });
 
-        document.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
-            const rect = previewCanvas.getBoundingClientRect();
-            const touch = e.touches[0];
-            const currentX = touch.clientX - rect.left;
-            const currentY = touch.clientY - rect.top;
-            const deltaX = currentX - dragStartX;
-            const deltaY = currentY - dragStartY;
-
-            const scale = 500 / 300;
-            imageX = lastX + (deltaX * scale);
-            imageY = lastY + (deltaY * scale);
-            renderComposite();
-        });
-
-        document.addEventListener('touchend', () => {
-            if (isDragging) {
+            if (e.touches.length === 2) {
+                // Pinch zoom started
+                initialPinchDistance = getTouchDistance(e.touches);
+                initialScale = imageScale;
                 isDragging = false;
+            } else if (e.touches.length === 1) {
+                // Single touch drag
+                isDragging = true;
+                const rect = previewCanvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                dragStartX = touch.clientX - rect.left;
+                dragStartY = touch.clientY - rect.top;
+                lastX = imageX;
+                lastY = imageY;
             }
         });
 
+        previewCanvas.addEventListener('touchmove', (e) => {
+            if (!userImage) return;
+            e.preventDefault();
+
+            if (e.touches.length === 2) {
+                // Pinch zoom
+                const currentDistance = getTouchDistance(e.touches);
+                const scale = currentDistance / initialPinchDistance;
+                imageScale = Math.min(Math.max(initialScale * scale, 1), 3);
+                zoomSlider.value = imageScale * 100;
+                renderComposite();
+            } else if (e.touches.length === 1 && isDragging) {
+                // Single touch drag
+                const rect = previewCanvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                const currentX = touch.clientX - rect.left;
+                const currentY = touch.clientY - rect.top;
+                const deltaX = currentX - dragStartX;
+                const deltaY = currentY - dragStartY;
+
+                const scale = 500 / 300;
+                imageX = lastX + (deltaX * scale);
+                imageY = lastY + (deltaY * scale);
+                renderComposite();
+            }
+        });
+
+        previewCanvas.addEventListener('touchend', () => {
+            isDragging = false;
+            initialPinchDistance = 0;
+        });
+
+        // Detect iOS/Safari
+        function isIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+
         // Download button
         downloadBtn.addEventListener('click', () => {
-            const link = document.createElement('a');
-            link.download = 'medium-pub-crawl-2026-avatar.png';
-            link.href = previewCanvas.toDataURL('image/png');
-            link.click();
+            if (isIOS()) {
+                // On iOS, open image in new tab for user to save to Photos
+                previewCanvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const newWindow = window.open(url, '_blank');
+
+                    // If popup blocked, try alternative method
+                    if (!newWindow) {
+                        // Create temporary link and click it
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = 'medium-pub-crawl-2026-avatar.png';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+
+                    // Cleanup blob URL after a short delay
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                }, 'image/png');
+            } else {
+                // Standard download for non-iOS devices
+                const link = document.createElement('a');
+                link.download = 'medium-pub-crawl-2026-avatar.png';
+                link.href = previewCanvas.toDataURL('image/png');
+                link.click();
+            }
         });
 
         // Clear button

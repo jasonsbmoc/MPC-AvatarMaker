@@ -4,7 +4,7 @@ const fileInput = document.getElementById('fileInput');
 const previewCanvas = document.getElementById('previewCanvas');
 const uploadPlaceholder = document.getElementById('uploadPlaceholder');
 const downloadBtn = document.getElementById('downloadBtn');
-const clearBtn = document.getElementById('clearBtn');
+const closeBtn = document.getElementById('closeBtn');
 const zoomControl = document.getElementById('zoomControl');
 const zoomSlider = document.getElementById('zoomSlider');
 const resetPosition = document.getElementById('resetPosition');
@@ -77,7 +77,6 @@ function loadImage(file) {
 
             renderComposite();
             downloadBtn.disabled = false;
-            clearBtn.disabled = false;
         };
         img.src = e.target.result;
     };
@@ -292,8 +291,10 @@ downloadBtn.addEventListener('click', async () => {
     link.click();
 });
 
-// Clear button
-clearBtn.addEventListener('click', () => {
+// Close button
+closeBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent click from bubbling to upload area
+
     userImage = null;
     currentFrame = null;
     ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
@@ -303,7 +304,6 @@ clearBtn.addEventListener('click', () => {
     zoomControl.classList.remove('active');
     fileInput.value = '';
     downloadBtn.disabled = true;
-    clearBtn.disabled = true;
 
     // Reset zoom and position
     imageScale = 1;
